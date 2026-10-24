@@ -216,6 +216,9 @@ h1 {
 }
 .stat-row div { padding: var(--s4) var(--s4) var(--s4) 0; }
 .stat-row div + div { padding-left: var(--s4); border-left: 1px solid var(--rule); }
+/* Extra sample metrics wrap onto a second row of four. */
+.stat-row div:nth-child(4n + 1) { padding-left: 0; border-left: 0; }
+.stat-row div:nth-child(n + 5) { border-top: 1px solid var(--rule); }
 .stat-row dd { margin: var(--s2) 0 0; font: 400 26px/1 var(--mono); }
 .stat-row dd.toned { color: var(--tone); }
 
@@ -388,7 +391,8 @@ footer p {
   .impact { grid-template-columns: minmax(0, 1fr); gap: var(--s5); }
   .insights-grid { grid-template-columns: minmax(0, 1fr); }
   .stat-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .stat-row div:nth-child(3) { padding-left: 0; border-left: 0; }
+  .stat-row div:nth-child(n) { padding-left: var(--s4); border-left: 1px solid var(--rule); }
+  .stat-row div:nth-child(odd) { padding-left: 0; border-left: 0; }
   .stat-row div:nth-child(n + 3) { border-top: 1px solid var(--rule); }
 }
 

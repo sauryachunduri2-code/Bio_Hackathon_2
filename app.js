@@ -3,7 +3,7 @@
   const $ = (id) => document.getElementById(id);
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  // The dataset on the page. Starts as the sample (loaded from a public Google Sheet); the editor and CSV upload replace it.
+  // The dataset on the page. Starts as the sample (data/sample.csv); the editor and CSV upload replace it.
   let liveRows = [];
   let liveColumns = {};
   let editRows = [];        // raw editor values: { name, global, biobank, status }
@@ -17,11 +17,6 @@
   let updateTimer = null;
 
   // ---------- CSV ----------
-
-  function sheetCsvUrl() {
-    const params = new URLSearchParams({ tqx: "out:csv", sheet: cfg.sheetTab });
-    return `https://docs.google.com/spreadsheets/d/${cfg.sheetId}/gviz/tq?${params}`;
-  }
 
   // Minimal RFC 4180 parser: handles quoted fields, escaped quotes and CRLF.
   function parseCsv(text) {
@@ -53,10 +48,24 @@
     return Number.isFinite(n) ? n : NaN;
   }
 
-  // Sheet columns, in order: group, global population share, biobank share, status.
+  // Normalizes group names so "European", "European Descent" and "EUR" all match.
+  // AMR is the 1000 Genomes code for admixed American ancestry, usually reported as Latino / Hispanic.
+  const GROUP_ALIASES = { eur: "european", eas: "east asian", sas: "south asian", afr: "african", amr: "latino / hispanic", "admixed american": "latino / hispanic", oth: "indigenous / other" };
+  function groupKey(name) {
+    const key = String(name).toLowerCase().replace(/\bdescent\b/g, "").replace(/\s+/g, " ").trim();
+    return GROUP_ALIASES[key] || key;
+  }
+
+  // Group-level CSV: group, global population share, biobank share, status (like data/sample.csv).
+  function isGroupLevel(body) {
+    const filled = body.filter((r) => (r[0] || "").trim());
+    return filled.length > 0 && filled.every((r) => Number.isFinite(toPercent(r[1])) && Number.isFinite(toPercent(r[2])));
+  }
+
   function tableFromCsv(text) {
     const [header, ...body] = parseCsv(text);
     if (!header || header.length < 3) throw new Error("The CSV needs at least three columns: group, population %, biobank %.");
+    if (!isGroupLevel(body)) return tableFromSamples(header, body);
     return {
       columns: { group: header[0].trim(), global: header[1].trim(), biobank: header[2].trim(), status: (header[3] || "Status").trim() },
       rows: body.map((r) => ({
@@ -65,6 +74,47 @@
         biobank: toPercent(r[2]),
         status: (r[3] || "").trim(),
       })),
+    };
+  }
+
+  // Sample-level CSV: one row per genome (e.g. Sample_ID, Population, Ancestry, Variant_Confidence, ...).
+  // Each group's biobank share is its share of the samples; numeric columns become per-group means.
+  // A sample file cannot say how big each group is in the world, so population shares are taken from
+  // the sample dataset by matching group names; unmatched groups are left blank for the user to fill in.
+  function tableFromSamples(header, body) {
+    const names = header.map((h) => h.trim());
+    const rows = body.filter((r) => r.some((c) => c.trim()));
+    let groupCol = names.findIndex((h) => /ancestry|ethnicity|^group$|super.?population/i.test(h));
+    if (groupCol < 0) groupCol = names.findIndex((h, i) => !/id$/i.test(h) && rows.some((r) => !Number.isFinite(toPercent(r[i]))));
+    if (groupCol < 0) throw new Error("Could not find a column naming each sample's ancestry group.");
+    const metricCols = names
+      .map((h, i) => i)
+      .filter((i) => i !== groupCol && !/id$/i.test(names[i]) && rows.every((r) => Number.isFinite(toPercent(r[i]))));
+
+    const byGroup = new Map();
+    rows.forEach((r) => {
+      const name = (r[groupCol] || "").trim();
+      if (!name) return;
+      if (!byGroup.has(name)) byGroup.set(name, []);
+      byGroup.get(name).push(r);
+    });
+    const total = [...byGroup.values()].reduce((s, list) => s + list.length, 0);
+    if (!total) throw new Error("No sample had an ancestry group.");
+
+    const population = new Map(liveRows.map((r) => [groupKey(r.name), r.global]));
+    return {
+      columns: { group: names[groupCol], global: liveColumns.global || "Population %", biobank: "Share of samples", status: "Samples" },
+      rows: [...byGroup.entries()].map(([name, list]) => ({
+        name,
+        global: population.has(groupKey(name)) ? population.get(groupKey(name)) : "",
+        biobank: +((list.length / total) * 100).toFixed(2),
+        status: `${list.length} of ${total} samples`,
+        metrics: Object.fromEntries(metricCols.map((i) => [
+          names[i].replace(/_/g, " "),
+          +(list.reduce((s, r) => s + toPercent(r[i]), 0) / list.length).toFixed(1),
+        ])),
+      })),
+      samples: total,
     };
   }
 
@@ -78,13 +128,13 @@
       .map((r) => {
         const global = +r.global;
         const biobank = +r.biobank;
-        return { name: r.name.trim(), global, biobank, status: r.status.trim(), gap: biobank - global, ratio: biobank / global };
+        return { name: r.name.trim(), global, biobank, status: r.status.trim(), metrics: r.metrics || {}, gap: biobank - global, ratio: biobank / global };
       })
       .sort((a, b) => a.ratio - b.ratio);
   }
 
   async function loadLive() {
-    const [csvRes, contentRes] = await Promise.all([fetch(sheetCsvUrl()), fetch(cfg.contentUrl)]);
+    const [csvRes, contentRes] = await Promise.all([fetch(cfg.sampleUrl), fetch(cfg.contentUrl)]);
     if (!csvRes.ok) throw new Error(`Could not load the sample data (HTTP ${csvRes.status}).`);
     const table = tableFromCsv(await csvRes.text());
     liveRows = table.rows;
@@ -104,9 +154,14 @@
   const statusOf = (g) => g.status || direction(g);
 
   function contentFor(name) {
-    const key = name.toLowerCase().replace(/\bdescent\b/g, "").replace(/\s+/g, " ").trim();
-    return content.groups[key] || content.fallback;
+    return content.groups[groupKey(name)] || content.fallback;
   }
+
+  // "European Descent" reads fine after "people of"; a bare "European" needs "ancestry".
+  const peopleOf = (name) => (/descent|ancestry|heritage|origin/i.test(name) ? name : `${name} ancestry`);
+
+  const metricText = (g) =>
+    Object.entries(g.metrics).map(([k, v]) => `mean ${k} ${v}`).join(", ");
 
   function el(tag, className, text) {
     const node = document.createElement(tag);
@@ -137,7 +192,7 @@
     const underBio = under.reduce((s, g) => s + g.biobank, 0);
 
     $("headline").textContent = over.ratio > 1
-      ? `${fmtPct(over.biobank)} of genomic data comes from people of ${over.name}, who are ${fmtPct(over.global)} of the world.`
+      ? `${fmtPct(over.biobank)} of genomic data comes from people of ${peopleOf(over.name)}, who are ${fmtPct(over.global)} of the world.`
       : `No group is over-sampled here, but ${worst.name} has ${fmtRatio(worst.ratio)} of its fair share of the data.`;
     $("dek").textContent = under.length && over.ratio > 1
       ? `The other ${fmtPct(underGlobal)} of humanity shares ${fmtPct(underBio)} of the data. Medicine built on that data has blindspots.`
@@ -289,6 +344,7 @@
       stat(fmtPct(g.biobank), columns.biobank),
       stat(fmtRatio(g.ratio), "Ratio to parity", true),
       stat(fmtPts(g.gap), "Gap"),
+      ...Object.entries(g.metrics).map(([k, v]) => stat(String(v), `Mean ${k}`)),
     );
     $("detail-clinical").textContent = c.clinical;
     $("detail-policy").textContent = c.policy;
@@ -348,7 +404,7 @@
         const data = await postJson(cfg.explainUrl, {
           group: g.name, status: statusOf(g),
           globalShare: g.global, biobankShare: g.biobank,
-          ratio: +g.ratio.toFixed(2), gap: +g.gap.toFixed(1),
+          ratio: +g.ratio.toFixed(2), gap: +g.gap.toFixed(1), metrics: g.metrics,
         });
         if (!data.text) throw new Error("Empty response");
         out.replaceChildren(el("span", "tag", "Generated by Gemini from the numbers on this page"), data.text);
@@ -358,7 +414,7 @@
         out.replaceChildren(
           el("span", "tag", `Gemini unavailable (${err.message}). Showing the offline summary.`),
           `The ${g.name} group is ${fmtPct(g.global)} of the world but ${fmtPct(g.biobank)} of biobank genomes, ` +
-          `${fmtRatio(g.ratio)} of fair representation. ${c.patient}`,
+          `${fmtRatio(g.ratio)} of fair representation${metricText(g) ? ` (${metricText(g)})` : ""}. ${c.patient}`,
         );
       }
     });
@@ -381,6 +437,16 @@
     if (Math.round(sum("biobank")) !== 100) dataQuality.push(`Biobank shares add up to ${fmtPct(sum("biobank"))}, not 100%.`);
     if (missing.length) dataQuality.push(`${missing.map((g) => g.name).join(", ")} ${missing.length === 1 ? "has" : "have"} no genomes in the biobank at all.`);
 
+    // Per-group sample metrics (from a sample-level upload): name where each one is highest and lowest.
+    const metricNames = [...new Set(groups.flatMap((g) => Object.keys(g.metrics)))];
+    const metricFindings = metricNames.map((m) => {
+      const withM = groups.filter((g) => Number.isFinite(g.metrics[m]));
+      if (withM.length < 2) return null;
+      const hi = withM.reduce((a, b) => (b.metrics[m] > a.metrics[m] ? b : a));
+      const lo = withM.reduce((a, b) => (b.metrics[m] < a.metrics[m] ? b : a));
+      return `Mean ${m} ranges from ${lo.metrics[m]} (${lo.name}) to ${hi.metrics[m]} (${hi.name}).`;
+    }).filter(Boolean);
+
     return {
       headline: under.length
         ? `${under.length} of ${groups.length} groups are under-sampled; ${worst.name} has ${fmtRatio(worst.ratio)} of its fair share.`
@@ -389,6 +455,7 @@
         `${over.name} holds ${fmtPct(over.biobank)} of biobank genomes while being ${fmtPct(over.global)} of the population (${fmtRatio(over.ratio)}).`,
         under.length && `Under-sampled groups are ${fmtPct(underGlobal)} of the population but ${fmtPct(underBio)} of the data.`,
         under.length > 1 && `The widest gaps by ratio: ${under.slice(0, 3).map((g) => `${g.name} (${fmtRatio(g.ratio)})`).join(", ")}.`,
+        ...metricFindings,
       ].filter(Boolean),
       clinicalRisks: under.length ? [
         `Reference databases have fewer genomes from ${under.slice(0, 3).map((g) => g.name).join(", ")}, so normal variants in these groups are more likely to be misread as harmful.`,
@@ -432,7 +499,7 @@
       try {
         const result = await postJson(cfg.insightsUrl, {
           source: source.kind === "live" ? "live" : "user",
-          rows: groups.map((g) => ({ group: g.name, globalShare: g.global, biobankShare: g.biobank, status: g.status })),
+          rows: groups.map((g) => ({ group: g.name, globalShare: g.global, biobankShare: g.biobank, status: g.status, metrics: g.metrics })),
         });
         renderInsights(result, `Generated by Gemini from ${sourceName} (${groups.length} groups)`);
       } catch (err) {
@@ -576,8 +643,10 @@
     reader.onload = () => {
       try {
         const table = tableFromCsv(String(reader.result));
-        if (!deriveGroups(table.rows).length) throw new Error("No row had a group name and numeric shares.");
-        setDataset(table.rows, table.columns, { kind: "user", label: file.name });
+        // Sample files may need population shares filled in by hand, so they load even if no row is complete yet.
+        if (!table.samples && !deriveGroups(table.rows).length) throw new Error("No row had a group name and numeric shares.");
+        const label = table.samples ? `${file.name} (${table.samples} samples)` : file.name;
+        setDataset(table.rows, table.columns, { kind: "user", label });
       } catch (err) {
         $("data-check").textContent = `Could not use ${file.name}: ${err.message}`;
         $("data-check").classList.add("warn");

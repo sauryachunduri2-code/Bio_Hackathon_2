@@ -6,6 +6,20 @@ const MAX_ROWS = 50;
 const MAX_TEXT = 80;
 const SECTIONS = ["findings", "clinicalRisks", "dataQuality", "recommendations"];
 
+// Optional per-group means of sample-level columns (e.g. variant confidence), from a sample-level upload.
+export function cleanMetrics(metrics) {
+  if (!metrics || typeof metrics !== "object" || Array.isArray(metrics)) return {};
+  return Object.fromEntries(
+    Object.entries(metrics)
+      .filter(([k, v]) => typeof k === "string" && k.trim() && Number.isFinite(v))
+      .slice(0, 6)
+      .map(([k, v]) => [k.trim().slice(0, 40), v])
+  );
+}
+
+export const metricText = (metrics) =>
+  Object.entries(metrics).map(([k, v]) => `mean ${k} ${v}`).join(", ");
+
 function cleanRows(rows) {
   if (!Array.isArray(rows) || rows.length === 0 || rows.length > MAX_ROWS) return null;
   const out = [];
@@ -21,6 +35,7 @@ function cleanRows(rows) {
       biobankShare,
       ratio: +(biobankShare / globalShare).toFixed(2),
       status: String(r?.status ?? "").trim().slice(0, MAX_TEXT),
+      metrics: cleanMetrics(r?.metrics),
     });
   }
   return out;
@@ -41,13 +56,17 @@ export default async function handler(req, res) {
   const source = req.body?.source === "user" ? "user-provided" : "illustrative sample";
 
   const table = rows
-    .map((r) => `- ${r.group}: ${r.globalShare}% of global population, ${r.biobankShare}% of biobank genomes, ratio ${r.ratio}×${r.status ? `, status "${r.status}"` : ""}`)
+    .map((r) => `- ${r.group}: ${r.globalShare}% of global population, ${r.biobankShare}% of biobank genomes, ratio ${r.ratio}×${r.status ? `, status "${r.status}"` : ""}${metricText(r.metrics) ? `, ${metricText(r.metrics)}` : ""}`)
     .join("\n");
+  const hasMetrics = rows.some((r) => Object.keys(r.metrics).length);
 
   const prompt = [
     "You are a genomic-equity analyst writing for clinicians and health policymakers.",
     `Analyze this ${source} dataset describing how ancestry groups are represented in a genomic biobank.`,
     "Representation ratio = biobank share / population share; 1× is parity, below 1× is under-sampled.",
+    hasMetrics
+      ? "Some rows include per-group means of sample-level columns (for example variant-calling confidence or a clinical risk score). Compare them across groups and relate them to representation, using only the values given."
+      : "",
     "",
     table,
     "",

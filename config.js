@@ -1,8 +1,7 @@
-// Data source: the organizers' "Hackathon Data" Google Sheet (tab Project_OmniBank_V1).
-// Every number on the page is read from this sheet at load time or derived from it.
+// Data source: the sample dataset in data/sample.csv, served with the site so it loads on any network.
+// Every number on the page is read from that file (or the visitor's own data) or derived from it.
 window.APP_CONFIG = {
-  sheetId: "15VT1FkqwNTRXHPCRLcXeCVUtKABcFHG4p1Hwdj-v1es",
-  sheetTab: "Project_OmniBank_V1",
+  sampleUrl: "data/sample.csv",
   contentUrl: "content/blindspots.json",
   explainUrl: "/api/explain",
   insightsUrl: "/api/insights",
