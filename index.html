@@ -18,7 +18,18 @@
     <p id="dek" class="dek"></p>
     <div id="figures" class="key-figures"></div>
     <p id="source-line" class="source-line"></p>
-    <p class="intro">Who is missing from a genomic biobank, and what does it mean for patients? Explore the sample below, or <a href="#data-section">enter your own biobank's numbers</a> and get an AI analysis.</p>
+
+    <!-- 3-Beat Narrative Arc -->
+    <div class="narrative-arc" style="margin-top: 2rem; padding: 1.5rem; background: var(--paper-2); border-left: 3px solid var(--signal);">
+      <h2 style="font-size: 1.1rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem; color: var(--ink);">The 3-Beat Story</h2>
+      <ol style="margin: 0; padding-left: 1.25rem; font-size: 0.95rem; line-height: 1.6;">
+        <li><strong>1. The Gap:</strong> <em>"Genetic repositories are heavily skewed toward European ancestry. The UK Biobank, one of the largest public datasets, is 94% European."</em></li>
+        <li><strong>2. The Harm:</strong> <em>"The same risk-prediction tool can be up to 4.5× less accurate for a patient of African ancestry, so the people it was never built on get the worst care."</em> (Martin et al., <em>Nature Genetics</em> 2019)</li>
+        <li><strong>3. The Fix:</strong> <em>"When the data matches the patient, accuracy jumps. Scores built on BioBank Japan were almost 50% more accurate for East Asians than UK Biobank scores. Our explorer maps biobank blindspots so they can be fixed."</em></li>
+      </ol>
+    </div>
+
+    <p class="intro" style="margin-top: 1.5rem;">Who is missing from a genomic biobank, and what does it mean for patients? Explore the sample below, or <a href="#data-section">enter your own biobank's numbers</a> and get an AI analysis.</p>
   </header>
 
   <main id="main">
@@ -132,6 +143,36 @@
       <div class="fig-body">
         <button id="insights-btn" class="btn" type="button">Analyze this dataset</button>
         <div id="insights-out" class="insights" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <!-- Literature Citations Section -->
+    <section id="citations-section" class="wrap figure" aria-labelledby="citations-title">
+      <div class="fig-label">
+        <p class="fig-no">Evidence base</p>
+        <h2 id="citations-title">Scientific Literature &amp; Citations</h2>
+        <p class="caption">Key clinical case studies and research supporting genomic equity auditing.</p>
+      </div>
+      <div class="fig-body">
+        <div class="citation-card">
+          <h3 style="font-size: 1.05rem; font-weight: 600; margin-bottom: 0.25rem;">
+            Source: Martin et al. (2019) — Clinical Disparities in Polygenic Risk Scores
+          </h3>
+          <p style="font-size: 0.9rem; color: var(--ink-2); margin-bottom: 0.5rem;">
+            <em>Nature Genetics</em>, "Clinical use of current polygenic risk scores may exacerbate health disparities"
+          </p>
+          <ul style="font-size: 0.9rem; padding-left: 1.25rem; line-height: 1.5;">
+            <li>Compared with European ancestry, prediction accuracy from UK Biobank data was 4.5× lower for African ancestry, 2.0× lower for East Asians, and 1.6× lower for both Hispanic/Latino Americans and South Asians.</li>
+            <li>Primary driver: dataset imbalance. The UK Biobank (almost half a million people) draws 94% of its data from participants of European ancestry.</li>
+            <li>Proof of fix: scores built from the BioBank Japan dataset were almost 50% more accurate for East Asians than scores from UK Biobank data, so ancestry-matched data gives more precise risk predictions.</li>
+            <li>Call to action: recruit more minority participants and make the data open, or healthcare inequities will widen (Alicia Martin, PhD).</li>
+          </ul>
+          <p style="font-size: 0.85rem; margin-top: 0.75rem;">
+            <a href="https://mgriblog.org/2019/05/16/why-we-need-more-diversity-in-genetics-research/" target="_blank" rel="noopener">Read the Mass General Research Institute blog post (Rosado, 2019) &rarr;</a>
+            &nbsp;·&nbsp;
+            <a href="https://www.nature.com/articles/s41588-019-0379-x" target="_blank" rel="noopener">Original study &rarr;</a>
+          </p>
+        </div>
       </div>
     </section>
 
