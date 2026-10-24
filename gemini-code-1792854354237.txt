@@ -1,0 +1,7 @@
+Group,Global_Percent,Biobank_Percent,Status,Gap_Points,Representation_Ratio
+European descent,16,75,Highly Over-Indexed,59,4.70
+East Asian descent,21,8,Severe Blindspot,-13,0.38
+South Asian descent,24,6,Severe Blindspot,-18,0.25
+African descent,18,5,Severe Blindspot,-13,0.28
+Latino / Hispanic,9,4,Underrepresented,-5,0.44
+Indigenous / Other,12,2,Completely Ignored,-10,0.17
