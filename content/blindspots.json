@@ -1,0 +1,64 @@
+{
+  "_note": "Qualitative text only. No figures live here: all numbers come from the Google Sheet. Keys are matched to the sheet's group names case-insensitively, ignoring the word 'descent'.",
+  "groups": {
+    "european": {
+      "clinical": "Most variant databases, genome-wide association studies and polygenic risk scores were built and validated in these cohorts, so genetic tools tend to work best here. That accuracy does not carry over automatically to other ancestries.",
+      "policy": "Each additional study in an already well-sampled cohort adds less. Moving funding toward under-sampled populations improves the accuracy of genomic medicine for everyone.",
+      "patient": "A patient of European descent is the most likely to get a confident, well-calibrated genetic risk result.",
+      "sources": [
+        "Popejoy & Fullerton, \"Genomics is failing on diversity,\" Nature (2016)",
+        "Martin et al., \"Clinical use of current polygenic risk scores may exacerbate health disparities,\" Nature Genetics (2019)"
+      ]
+    },
+    "east asian": {
+      "clinical": "Drug-response variants differ in frequency across ancestries. CYP2C19 loss-of-function alleles reduce activation of the antiplatelet drug clopidogrel and are more common in East Asian populations, so dosing evidence gathered mostly in other cohorts can miss them.",
+      "policy": "Pharmacogenomic guidelines and drug trials should report and test performance by ancestry before a standard dose is adopted.",
+      "patient": "A patient given a standard antiplatelet drug after a heart stent may get less protection than expected because their genotype was never considered.",
+      "sources": [
+        "Lee et al., CPIC Guideline for CYP2C19 Genotype and Clopidogrel Therapy: 2022 Update, Clinical Pharmacology & Therapeutics (2022)"
+      ]
+    },
+    "south asian": {
+      "clinical": "South Asian populations carry high cardiometabolic risk that risk models trained elsewhere can underestimate. A MYBPC3 deletion linked to cardiomyopathy is relatively common in South Asian populations, yet it was characterized late because these cohorts were under-sampled.",
+      "policy": "Large national cohorts in South Asia and in the diaspora are needed so that risk tools are calibrated for one of the world's largest population groups.",
+      "patient": "A patient with a strong family history of heart disease may get a reassuring genetic risk score that was never calibrated for their ancestry.",
+      "sources": [
+        "Dhandapany et al., \"A common MYBPC3 (cardiac myosin binding protein C) variant associated with cardiomyopathies in South Asia,\" Nature Genetics (2009)",
+        "Martin et al., Nature Genetics (2019)"
+      ]
+    },
+    "african": {
+      "clinical": "African populations hold the greatest human genetic diversity. With sparse reference data, many normal variants look rare and get flagged as suspicious. Variants once reported as pathogenic for hypertrophic cardiomyopathy were later reclassified as benign after being found common in people of African ancestry.",
+      "policy": "Invest in African-led genomics infrastructure, such as H3Africa, so that data, expertise and benefits stay with the communities studied.",
+      "patient": "A healthy person can be told they carry a disease-causing variant because of a gap in reference data, and their relatives may then be tested or treated for the same false finding.",
+      "sources": [
+        "Manrai et al., \"Genetic misdiagnoses and the potential for health disparities,\" New England Journal of Medicine (2016)",
+        "Martin et al., Nature Genetics (2019)"
+      ]
+    },
+    "latino / hispanic": {
+      "clinical": "Admixed ancestry, a mix of Indigenous American, European and African genomes, is poorly represented in reference panels. That lowers imputation accuracy and makes risk scores less reliable.",
+      "policy": "Fund admixed-ancestry reference panels and community-partnered recruitment in Latin America and in US clinics.",
+      "patient": "A patient's genetic report may label more of their variants as 'uncertain significance', leaving them and their doctor without a clear answer.",
+      "sources": [
+        "Popejoy & Fullerton, Nature (2016)",
+        "Martin et al., Nature Genetics (2019)"
+      ]
+    },
+    "indigenous / other": {
+      "clinical": "Without population-specific allele frequencies, clinicians cannot tell whether a variant is rare and harmful or simply common in the community.",
+      "policy": "Research should follow Indigenous data-governance principles (CARE) so that communities control how their genomic data is collected and used.",
+      "patient": "A family may be offered sequencing that cannot return an actionable answer, and may reasonably distrust research given past misuse of samples.",
+      "sources": [
+        "Carroll et al., \"The CARE Principles for Indigenous Data Governance,\" Data Science Journal (2020)",
+        "Havasupai Tribe v. Arizona Board of Regents (blood-sample misuse case)"
+      ]
+    }
+  },
+  "fallback": {
+    "clinical": "When a population is under-sampled, reference databases lack its common variants. Normal variation can then be misread as disease-causing, and risk scores lose accuracy.",
+    "policy": "Fund recruitment and reference panels for this population, governed in partnership with the community.",
+    "patient": "Patients from this group are more likely to get uncertain or incorrect genetic results.",
+    "sources": ["Popejoy & Fullerton, Nature (2016)"]
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "omnibank-blindspot-explorer",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  }
+}

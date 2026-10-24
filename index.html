@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>OmniBank Blindspot Explorer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="loading">
+  <a class="skip-link" href="#main">Skip to the figures</a>
+
+  <header class="wrap hero">
+    <p class="kicker">Genomic equity explorer</p>
+    <h1 id="headline">Loading the sample data…</h1>
+    <p id="dek" class="dek"></p>
+    <div id="figures" class="key-figures"></div>
+    <p id="source-line" class="source-line"></p>
+    <p class="intro">Who is missing from a genomic biobank, and what does it mean for patients? Explore the sample below, or <a href="#data-section">enter your own biobank's numbers</a> and get an AI analysis.</p>
+  </header>
+
+  <main id="main">
+    <div id="error" class="wrap error" role="alert" hidden>
+      <p id="error-text"></p>
+      <button id="retry-btn" class="btn" type="button">Try again</button>
+    </div>
+
+    <section class="wrap figure" aria-labelledby="fig1-title">
+      <div class="fig-label">
+        <p class="fig-no">Fig. 1</p>
+        <h2 id="fig1-title">Who is in the data vs. who is in the world</h2>
+        <p class="caption">Each line runs from a group's share of the world to its share of biobank genomes. Sorted from most under-sampled to most over-sampled. Select a row to read what the gap means.</p>
+      </div>
+      <div class="fig-body">
+        <div class="key" aria-hidden="true">
+          <span><i class="dot dot-pop"></i>Population share</span>
+          <span><i class="dot dot-under"></i>Biobank share, under-sampled</span>
+          <span><i class="dot dot-over"></i>Biobank share, over-sampled</span>
+        </div>
+        <div id="dumbbell" class="plot"></div>
+        <div id="dumbbell-axis" class="axis" aria-hidden="true"></div>
+        <details class="disclosure">
+          <summary>Show the data as a table</summary>
+          <div class="table-scroll"><table id="data-table"></table></div>
+        </details>
+      </div>
+    </section>
+
+    <section class="wrap figure" aria-labelledby="fig2-title">
+      <div class="fig-label">
+        <p class="fig-no">Fig. 2</p>
+        <h2 id="fig2-title">How far each group is from fair representation</h2>
+        <p class="caption">Representation ratio is biobank share divided by population share, on a log scale. The vertical rule marks parity, 1×.</p>
+      </div>
+      <div class="fig-body">
+        <div id="ratio" class="plot"></div>
+        <div id="ratio-axis" class="axis" aria-hidden="true"></div>
+      </div>
+    </section>
+
+    <section id="detail" class="wrap figure detail" aria-live="polite" hidden>
+      <div class="fig-label">
+        <p class="fig-no">Selected group</p>
+        <p id="detail-direction" class="direction"></p>
+      </div>
+      <div class="fig-body">
+        <h2 id="detail-name" class="detail-name"></h2>
+        <p id="detail-status" class="detail-status"></p>
+        <dl id="detail-stats" class="stat-row"></dl>
+        <div class="impact">
+          <article><h3>Clinical medicine</h3><p id="detail-clinical"></p></article>
+          <article><h3>Healthcare policy</h3><p id="detail-policy"></p></article>
+          <article><h3>The patient</h3><p id="detail-patient"></p></article>
+        </div>
+        <div class="explain">
+          <button id="explain-btn" class="btn" type="button">Explain this blindspot in plain language</button>
+          <p id="explain-out" class="explain-out" aria-live="polite"></p>
+        </div>
+        <details class="disclosure sources"><summary>Sources</summary><ul id="detail-sources"></ul></details>
+      </div>
+    </section>
+
+    <section id="data-section" class="wrap figure" aria-labelledby="data-title">
+      <div class="fig-label">
+        <p class="fig-no">Your data</p>
+        <h2 id="data-title">Test your own biobank</h2>
+        <p class="caption">Edit any value in the sample, add or remove groups, or upload a CSV with four columns: group, population %, biobank %, status. Every figure on this page updates as you type.</p>
+      </div>
+      <div class="fig-body">
+        <div class="toolbar">
+          <button id="add-row" class="btn btn-quiet" type="button">Add a group</button>
+          <label class="btn btn-quiet file-btn">Upload CSV<input id="csv-input" type="file" accept=".csv,text/csv"></label>
+          <button id="download-csv" class="btn btn-quiet" type="button">Download CSV</button>
+          <button id="reset-data" class="btn btn-quiet" type="button">Reset to sample</button>
+        </div>
+        <p id="data-source" class="source-line"></p>
+        <div class="table-scroll">
+          <table id="editor" class="editor">
+            <thead>
+              <tr>
+                <th scope="col" id="col-group">Group</th>
+                <th scope="col" id="col-global" class="num">Population %</th>
+                <th scope="col" id="col-biobank" class="num">Biobank %</th>
+                <th scope="col" id="col-status">Status</th>
+                <th scope="col"><span class="visually-hidden">Remove</span></th>
+              </tr>
+            </thead>
+            <tbody id="editor-body"></tbody>
+          </table>
+        </div>
+        <p id="data-check" class="helper" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <section id="insights-section" class="wrap figure" aria-labelledby="insights-title">
+      <div class="fig-label">
+        <p class="fig-no">AI analysis</p>
+        <h2 id="insights-title">What this dataset means</h2>
+        <p class="caption">Gemini reads every row of the data currently on the page, the sample or yours, and writes findings for clinicians and policymakers using only those numbers.</p>
+      </div>
+      <div class="fig-body">
+        <button id="insights-btn" class="btn" type="button">Analyze this dataset</button>
+        <div id="insights-out" class="insights" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section class="wrap endmatter">
+      <div aria-labelledby="sim-title">
+        <h2 id="sim-title">Parity simulator</h2>
+        <label for="sim-size">How many genomes are in your biobank?</label>
+        <input id="sim-size" type="number" min="1" step="1" inputmode="numeric" aria-describedby="sim-help sim-error">
+        <p id="sim-help" class="helper">Shows how many genomes each group would need for fair representation, without discarding any existing data.</p>
+        <p id="sim-error" class="field-error" aria-live="polite"></p>
+        <div id="sim-out"></div>
+      </div>
+      <div aria-labelledby="takeaways-title">
+        <h2 id="takeaways-title">What should change</h2>
+        <ol id="takeaways"></ol>
+      </div>
+    </section>
+  </main>
+
+  <footer class="wrap">
+    <p>For education only. This is not medical advice.</p>
+  </footer>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
