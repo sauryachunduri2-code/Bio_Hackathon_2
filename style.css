@@ -201,6 +201,12 @@ h1 {
 .axis span:last-child { transform: translateX(-100%); }
 .axis .parity-label { color: var(--ink); }
 
+/* Fig. 3: one strip chart per sample metric. */
+.metric-chart + .metric-chart { margin-top: var(--s7); }
+.metric-chart h3 { font: 600 15px/1.3 var(--sans); }
+.metric-chart .metric-note { margin: var(--s2) 0 var(--s4); max-width: 60ch; font: italic 400 15px/1.45 var(--serif); color: var(--ink-2); }
+.track .bar { position: absolute; top: 50%; height: 2px; transform: translateY(-50%); left: 0; background: var(--rule); }
+
 /* ---------- Detail ---------- */
 
 .detail-name { font: 500 clamp(32px, 4.5vw, 46px)/1.1 var(--serif); }

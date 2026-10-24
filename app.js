@@ -287,6 +287,76 @@
       placed("span", t === 1 ? "parity-label" : "", x(t), t === 1 ? "1× parity" : t < 1 ? `1/${1 / t}×` : `${t}×`)));
   }
 
+  // ---------- Fig. 3: per-group means of extra sample columns (only for sample-level uploads) ----------
+
+  // Pearson correlation; used to describe whether a metric rises or falls with representation.
+  function correlation(xs, ys) {
+    const n = xs.length;
+    const mx = xs.reduce((s, v) => s + v, 0) / n;
+    const my = ys.reduce((s, v) => s + v, 0) / n;
+    let sxy = 0, sxx = 0, syy = 0;
+    for (let i = 0; i < n; i++) {
+      sxy += (xs[i] - mx) * (ys[i] - my);
+      sxx += (xs[i] - mx) ** 2;
+      syy += (ys[i] - my) ** 2;
+    }
+    return sxx && syy ? sxy / Math.sqrt(sxx * syy) : NaN;
+  }
+
+  function metricNote(name, withM) {
+    const ranked = [...withM].sort((a, b) => a.metrics[name] - b.metrics[name]);
+    const lo = ranked[0];
+    const hi = ranked[ranked.length - 1];
+    const range = `Lowest: ${lo.name} (${lo.metrics[name]}). Highest: ${hi.name} (${hi.metrics[name]}).`;
+    const usable = withM.filter((g) => g.ratio > 0);
+    if (usable.length < 3) return range;
+    const r = correlation(usable.map((g) => Math.log2(g.ratio)), usable.map((g) => g.metrics[name]));
+    if (!Number.isFinite(r)) return range;
+    // Conventional cut-offs for describing a correlation as weak or clear.
+    const strength = Math.abs(r) >= 0.7 ? "strongly" : Math.abs(r) >= 0.4 ? "moderately" : null;
+    const link = strength
+      ? `${name} is ${strength} ${r > 0 ? "higher" : "lower"} for better-represented groups`
+      : `${name} shows no clear link to representation`;
+    return `${link} (correlation ${r.toFixed(2)}). ${range}`;
+  }
+
+  function renderMetrics() {
+    const names = [...new Set(groups.flatMap((g) => Object.keys(g.metrics)))];
+    const section = $("metrics-section");
+    section.hidden = names.length === 0;
+    if (!names.length) { $("metric-charts").replaceChildren(); return; }
+
+    const charts = names.map((name) => {
+      const withM = groups.filter((g) => Number.isFinite(g.metrics[name]));
+      const maxValue = Math.max(...withM.map((g) => g.metrics[name]), 0);
+      // Percent-like metrics get a 0–100 axis so groups compare against the full scale.
+      const scaleMax = maxValue <= 100 ? 100 : Math.ceil(maxValue / 10) * 10;
+      const x = (v) => (Math.max(0, v) / scaleMax) * 100;
+
+      const box = el("div", "metric-chart");
+      box.append(el("h3", "", `Mean ${name}`), el("p", "metric-note", metricNote(name, withM)));
+      const plot = el("div", "plot");
+      withM.forEach((g) => {
+        const v = g.metrics[name];
+        const row = rowButton(g, `${g.name}: mean ${name} ${v}, ${direction(g).toLowerCase()} at ${fmtRatio(g.ratio)}`);
+        const label = el("span", `row-name ${tone(g)}`);
+        label.append(el("span", "", g.name), el("br"), el("span", "ratio-word val toned", `${fmtRatio(g.ratio)} · ${direction(g)}`));
+        const track = el("div", `track ${tone(g)}`);
+        const bar = el("span", "bar");
+        bar.style.width = `${x(v)}%`;
+        track.append(bar, placed("span", "mark toned", x(v)), placed("span", "val above toned", x(v), String(v)));
+        row.append(label, track);
+        plot.appendChild(row);
+      });
+      const axis = el("div", "axis");
+      axis.setAttribute("aria-hidden", "true");
+      axis.append(...[0, 1, 2, 3, 4].map((i) => placed("span", "", i * 25, `${+((scaleMax / 4) * i).toFixed(1)}`)));
+      box.append(plot, axis);
+      return box;
+    });
+    $("metric-charts").replaceChildren(...charts);
+  }
+
   function rowButton(g, label) {
     const row = el("button", "row");
     row.type = "button";
@@ -602,6 +672,7 @@
     renderHero();
     renderDumbbell();
     renderRatio();
+    renderMetrics();
     renderDataTable();
     renderTakeaways();
     renderSimulator();
