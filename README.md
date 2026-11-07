@@ -21,6 +21,7 @@ python3 -m http.server 8000
 The Gemini button uses the offline summary when run locally (there is no `/api` route). To test Gemini locally, use `vercel dev`.
 
 ## Deploy (Vercel)
+Link: https://omnibank-blindspot-explorer.vercel.app/
 1. Import this repo in Vercel. No build step is needed.
 2. Add the environment variable `GEMINI_API_KEY`. `GEMINI_MODEL` is optional and defaults to `gemini-2.5-flash`.
 
